@@ -1,0 +1,30 @@
+entry event packetin (int swid, int srcip);
+event packet (int swid, int srcip);
+event forward (int swid, int srcip);
+exit event packetout (int swid, int srcip);
+
+const int seed = 1234;
+global Array.t<<32>> counts = Array.create(100);
+
+memop incr(int memval, int incrval) {
+    return memval + incrval;
+}
+
+handle packet (int swid, int srcip) {
+  Array.setm(counts, srcip, incr, 1);
+  generate forward (3, srcip);
+}
+
+handle forward (int swid, int srcip) {
+  Array.setm(counts, srcip, incr, 1);
+  generate packetout (4, srcip);
+}
+
+handle packetin (int swid, int srcip) {
+  if (swid == 1 && srcip != 100) {
+    generate packet (2, srcip);
+  } else {
+    // TODO: remove
+    generate packetout (4, srcip);
+  }
+}
