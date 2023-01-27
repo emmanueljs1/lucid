@@ -1,30 +1,39 @@
-entry event packetin (int swid, int srcip);
-event packet (int swid, int srcip);
-event forward (int swid, int srcip);
-exit event packetout (int swid, int srcip);
+entry event packetin (int srcip);
+event packet (int srcip);
+event forward (int srcip, int<<10>> idx);
+exit event packetout (int srcip, int<<10>> idx);
 
-const int seed = 1234;
-global Array.t<<32>> counts = Array.create(100);
+const int TRUE = 1;
+const int FALSE = 0;
+const int HASH_SEED = 10398247;
+const int NUM_IPS = 1024;
+global Array.t<<32>> ips = Array.create(NUM_IPS);
+global Array.t<<32>> counts = Array.create(NUM_IPS);
 
 memop incr(int memval, int incrval) {
     return memval + incrval;
 }
 
-handle packet (int swid, int srcip) {
-  Array.setm(counts, srcip, incr, 1);
-  generate forward (3, srcip);
+handle packet (int srcip) {
+    int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
+
+    int stored_ip = Array.get(ips, idx);
+ 
+    // keep packet if index hasn't been written to or if it has,
+    // if the stored IP is the same as the packet's IP
+    if (stored_ip == 0 || stored_ip == srcip) {
+        generate forward (srcip, idx);
+    }
 }
 
-handle forward (int swid, int srcip) {
-  Array.setm(counts, srcip, incr, 1);
-  generate packetout (4, srcip);
+handle forward (int srcip, int<<10>> idx) {
+    Array.setm(counts, idx, incr, 1);
+    generate packetout (srcip, idx);
 }
 
-handle packetin (int swid, int srcip) {
-  if (swid == 1 && srcip != 100) {
-    generate packet (2, srcip);
-  } else {
-    // TODO: remove
-    generate packetout (4, srcip);
-  }
+handle packetin (int srcip) {
+    // ignore packets from IP 10.0.0.1 (167772161)
+    if (srcip != 167772161) {
+        generate packet (srcip);
+    }
 }
