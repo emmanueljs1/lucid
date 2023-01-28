@@ -4,8 +4,6 @@ event transform_and_combine (int key);
 event report_new_val (int key);
 event main (int key, int new_val);
 
-const int TRUE = 1;
-const int FALSE = 0;
 const int HASH_SEED = 10398247;
 const int TABLE_SIZE = 1024;
 global Array.t<<32>> keys = Array.create(TABLE_SIZE);
