@@ -1,7 +1,10 @@
 (* keys are timestamp, value is srcip
 let T1 = thePackets in
-(* 167772161 is 10.0.0.1 *)
-let T2 = filter (<\x. snd x == 167772161>, T1) in
+(* filter out packets from IP 10.0.0.1 (167772161) *)
+let T2 = filter <\x. snd x == 167772161> T1 in
+(* transform funciton *)
+let E1 = <\x. (snd x, 1)> in
+(* combine function *)
+let E2 = <\x1.\x2. x1 + x2> in
 (* group by source IP *)
-let T3 = collect (<\x. (snd x, 1)>, <\x1.\x2. x1 + x2>, T2) in
-
+let T3 = collect (E1, E2) T2 in
