@@ -3,9 +3,9 @@
   "max time": 9999999,
   "default input gap": 10000,
   "random seed": 0,
-  "events": [{
-     "name":"packetin", "args": [1],
-     "name":"packetin", "args": [101],
-     "name":"packetin", "args": [1025]
-  }]
+  "events": [
+      {"name":"packetin", "args": [1]},
+      {"name":"packetin", "args": [1]},
+      {"name":"packetin", "args": [1]}
+  ]
 }

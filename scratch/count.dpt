@@ -1,7 +1,8 @@
 entry event packetin (int srcip);
 event packet (int srcip);
-event forward (int srcip, int<<10>> idx);
-exit event packetout (int srcip, int<<10>> idx);
+event forward (int srcip);
+event report_count (int srcip);
+exit event packetout (int srcip, int count);
 
 const int TRUE = 1;
 const int FALSE = 0;
@@ -22,13 +23,20 @@ handle packet (int srcip) {
     // keep packet if index hasn't been written to or if it has,
     // if the stored IP is the same as the packet's IP
     if (stored_ip == 0 || stored_ip == srcip) {
-        generate forward (srcip, idx);
+        generate forward (srcip);
     }
 }
 
-handle forward (int srcip, int<<10>> idx) {
+handle forward (int srcip) {
+    int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
     Array.setm(counts, idx, incr, 1);
-    generate packetout (srcip, idx);
+    generate report_count (srcip);
+}
+
+handle report_count (int srcip) {
+    int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
+    int count = Array.get(counts, idx);
+    generate packetout (srcip, count);
 }
 
 handle packetin (int srcip) {
