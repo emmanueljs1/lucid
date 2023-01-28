@@ -1,6 +1,6 @@
 entry event packetin (int srcip);
-event packet (int srcip);
-event forward (int srcip);
+event new_packet (int srcip);
+event increase_count (int srcip);
 event report_count (int srcip);
 exit event packetout (int srcip, int count);
 
@@ -15,7 +15,7 @@ memop incr(int memval, int incrval) {
     return memval + incrval;
 }
 
-handle packet (int srcip) {
+handle new_packet (int srcip) {
     int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
 
     int stored_ip = Array.get(ips, idx);
@@ -23,11 +23,11 @@ handle packet (int srcip) {
     // keep packet if index hasn't been written to or if it has,
     // if the stored IP is the same as the packet's IP
     if (stored_ip == 0 || stored_ip == srcip) {
-        generate forward (srcip);
+        generate increase_count (srcip);
     }
 }
 
-handle forward (int srcip) {
+handle increase_count (int srcip) {
     int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
     Array.setm(counts, idx, incr, 1);
     generate report_count (srcip);
@@ -42,6 +42,6 @@ handle report_count (int srcip) {
 handle packetin (int srcip) {
     // ignore packets from IP 10.0.0.1 (167772161)
     if (srcip != 167772161) {
-        generate packet (srcip);
+        generate new_packet (srcip);
     }
 }
