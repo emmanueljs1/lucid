@@ -1,8 +1,8 @@
 entry event packetin (int srcip);
-event new_packet (int srcip);
-event increase_count (int srcip);
-event report_count (int srcip);
-exit event packetout (int srcip, int count);
+event collect (int srcip);
+event transform_and_combine (int srcip);
+event report_new_val (int srcip);
+event main (int key, int new_val);
 
 const int TRUE = 1;
 const int FALSE = 0;
@@ -11,11 +11,13 @@ const int NUM_IPS = 1024;
 global Array.t<<32>> ips = Array.create(NUM_IPS);
 global Array.t<<32>> counts = Array.create(NUM_IPS);
 
-memop incr(int memval, int incrval) {
+memop combine(int memval, int incrval) {
     return memval + incrval;
 }
 
-handle new_packet (int srcip) {
+handle collect (int srcip) {
+    int key = srcip;
+
     int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
 
     int stored_ip = Array.get(ips, idx);
@@ -23,25 +25,40 @@ handle new_packet (int srcip) {
     // keep packet if index hasn't been written to or if it has,
     // if the stored IP is the same as the packet's IP
     if (stored_ip == 0 || stored_ip == srcip) {
-        generate increase_count (srcip);
+        generate transform_and_combine (srcip);
     }
 }
 
-handle increase_count (int srcip) {
+handle transform_and_combine (int srcip) {
+    int transformed = 1;
+
     int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
-    Array.setm(counts, idx, incr, 1);
-    generate report_count (srcip);
+    Array.setm(counts, idx, combine, transformed);
+    generate report_new_val (srcip);
 }
 
-handle report_count (int srcip) {
+handle report_new_val (int srcip) {
     int<<10>> idx = hash<<10>>(HASH_SEED, srcip, NUM_IPS);
     int count = Array.get(counts, idx);
-    generate packetout (srcip, count);
+    generate main (srcip, count);
 }
 
 handle packetin (int srcip) {
-    // ignore packets from IP 10.0.0.1 (167772161)
+    // compiled filter operation
     if (srcip != 167772161) {
-        generate new_packet (srcip);
+        // compiled collect operation
+        generate collect (srcip);
     }
+}
+
+// Everything above compiled, below code written by user
+
+exit event block_packet (int srcip);
+
+handle main (int key, int new_val) {
+  int srcip = key;
+  int count = new_val;
+  if (count > 2) {
+    generate block_packet(srcip);
+  }
 }
