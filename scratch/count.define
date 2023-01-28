@@ -1,0 +1,7 @@
+(* keys are timestamp, value is srcip
+let T1 = thePackets in
+(* 167772161 is 10.0.0.1 *)
+let T2 = filter (<\x. snd x == 167772161>, T1) in
+(* group by source IP *)
+let T3 = collect (<\x. snd x>, <\x1.\x2. x1 + x2>, T2) in
+
